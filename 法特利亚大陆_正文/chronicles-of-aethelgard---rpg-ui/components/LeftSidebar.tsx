@@ -1,5 +1,5 @@
 import { MapPin, Skull, Zap } from 'lucide-react';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Character, GameGlobal } from '../types';
 import { Panel, StatBar } from './UI';
 
@@ -11,8 +11,50 @@ interface LeftSidebarProps {
 }
 
 export const LeftSidebar: React.FC<LeftSidebarProps> = ({ character, global, mvuStat }) => {
-  const [avatarUrl, setAvatarUrl] = useState<string>('https://picsum.photos/200');
+  const defaultAvatarUrl = 'https://picsum.photos/200';
+
+  // 从聊天变量读取保存的头像 URL
+  const loadAvatarUrl = (): string => {
+    try {
+      // @ts-expect-error getVariables 为全局注入
+      const vars = getVariables({ type: 'chat' });
+      const saved = vars?.['ui_settings']?.['avatarUrl'];
+      if (typeof saved === 'string' && saved.trim()) {
+        return saved;
+      }
+    } catch (err) {
+      console.warn('读取头像设置失败，使用默认值', err);
+    }
+    return defaultAvatarUrl;
+  };
+
+  const [avatarUrl, setAvatarUrl] = useState<string>(loadAvatarUrl);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // 组件加载时读取头像
+  useEffect(() => {
+    const loaded = loadAvatarUrl();
+    setAvatarUrl(loaded);
+  }, []);
+
+  // 保存头像 URL 到聊天变量
+  const saveAvatarUrl = (url: string) => {
+    try {
+      // @ts-expect-error getVariables, insertOrAssignVariables 为全局注入
+      const vars = getVariables({ type: 'chat' });
+      const updated = {
+        ...vars,
+        ui_settings: {
+          ...(vars?.ui_settings || {}),
+          avatarUrl: url,
+        },
+      };
+      // @ts-expect-error insertOrAssignVariables 为全局注入
+      insertOrAssignVariables(updated, { type: 'chat' });
+    } catch (err) {
+      console.warn('保存头像设置失败', err);
+    }
+  };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -25,6 +67,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ character, global, mvu
     reader.onload = () => {
       if (typeof reader.result === 'string') {
         setAvatarUrl(reader.result);
+        saveAvatarUrl(reader.result);
       }
     };
     reader.readAsDataURL(file);

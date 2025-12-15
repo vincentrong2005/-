@@ -19,14 +19,68 @@ interface TextSettings {
 export const MainContent: React.FC<MainContentProps> = ({ chatLog, isProcessing, mainText, onSendMessage }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState<TextSettings>({
+
+  // 默认设置
+  const defaultSettings: TextSettings = {
     width: 85,
     fontSize: 14,
     letterSpacing: 0,
     fontFamily: 'font-serif'
-  });
+  };
 
+  // 从聊天变量读取保存的设置
+  const loadSettings = (): TextSettings => {
+    try {
+      // @ts-expect-error getVariables 为全局注入
+      const vars = getVariables({ type: 'chat' });
+      const saved = vars?.['ui_settings']?.['textSettings'];
+      if (saved && typeof saved === 'object') {
+        return {
+          width: typeof saved.width === 'number' ? saved.width : defaultSettings.width,
+          fontSize: typeof saved.fontSize === 'number' ? saved.fontSize : defaultSettings.fontSize,
+          letterSpacing: typeof saved.letterSpacing === 'number' ? saved.letterSpacing : defaultSettings.letterSpacing,
+          fontFamily: typeof saved.fontFamily === 'string' ? saved.fontFamily : defaultSettings.fontFamily,
+        };
+      }
+    } catch (err) {
+      console.warn('读取字体设置失败，使用默认值', err);
+    }
+    return defaultSettings;
+  };
+
+  const [settings, setSettings] = useState<TextSettings>(loadSettings);
   const [inputValue, setInputValue] = useState('');
+
+  // 保存设置到聊天变量
+  const saveSettings = (newSettings: TextSettings) => {
+    try {
+      // @ts-expect-error getVariables, insertOrAssignVariables 为全局注入
+      const vars = getVariables({ type: 'chat' });
+      const updated = {
+        ...vars,
+        ui_settings: {
+          ...(vars?.ui_settings || {}),
+          textSettings: newSettings,
+        },
+      };
+      // @ts-expect-error insertOrAssignVariables 为全局注入
+      insertOrAssignVariables(updated, { type: 'chat' });
+    } catch (err) {
+      console.warn('保存字体设置失败', err);
+    }
+  };
+
+  // 组件加载时读取设置
+  useEffect(() => {
+    const loaded = loadSettings();
+    setSettings(loaded);
+  }, []);
+
+  // 设置改变时保存
+  const updateSettings = (newSettings: TextSettings) => {
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,7 +136,7 @@ export const MainContent: React.FC<MainContentProps> = ({ chatLog, isProcessing,
                   <input
                     type="range" min="50" max="100" step="5"
                     value={settings.width}
-                    onChange={(e) => setSettings({...settings, width: parseInt(e.target.value)})}
+                    onChange={(e) => updateSettings({...settings, width: parseInt(e.target.value)})}
                     className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-gold-500"
                   />
                </div>
@@ -93,7 +147,7 @@ export const MainContent: React.FC<MainContentProps> = ({ chatLog, isProcessing,
                   <input
                     type="range" min="12" max="24" step="1"
                     value={settings.fontSize}
-                    onChange={(e) => setSettings({...settings, fontSize: parseInt(e.target.value)})}
+                    onChange={(e) => updateSettings({...settings, fontSize: parseInt(e.target.value)})}
                     className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-gold-500"
                   />
                </div>
@@ -104,7 +158,7 @@ export const MainContent: React.FC<MainContentProps> = ({ chatLog, isProcessing,
                   <input
                     type="range" min="0" max="5" step="0.5"
                     value={settings.letterSpacing}
-                    onChange={(e) => setSettings({...settings, letterSpacing: parseFloat(e.target.value)})}
+                    onChange={(e) => updateSettings({...settings, letterSpacing: parseFloat(e.target.value)})}
                     className="w-full h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-gold-500"
                   />
                </div>
@@ -114,7 +168,7 @@ export const MainContent: React.FC<MainContentProps> = ({ chatLog, isProcessing,
                   <label className="text-[10px] text-stone-400 uppercase block mb-1">字体风格</label>
                   <select
                     value={settings.fontFamily}
-                    onChange={(e) => setSettings({...settings, fontFamily: e.target.value})}
+                    onChange={(e) => updateSettings({...settings, fontFamily: e.target.value})}
                     className="w-full bg-[#0b0d13] border border-[#2f3040] text-[var(--gold-100)] text-xs rounded p-1 focus:border-[var(--gold-500)] outline-none"
                   >
                      <option value="font-serif">衬线 (Serif)</option>
