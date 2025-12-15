@@ -78,6 +78,33 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ character, global, mvu
         <StatusBlock mvuStat={mvuStat} />
       </Panel>
 
+      {/* Vitals: HP / MP / Stamina */}
+      <Panel title="生命 · 魔力 · 耐力">
+        <div className="space-y-3">
+          <StatBar
+            label="生命"
+            value={character.vitals.hp}
+            max={character.vitals.maxHp}
+            color="red"
+            showValue
+          />
+          <StatBar
+            label="魔力"
+            value={character.vitals.mp}
+            max={character.vitals.maxMp}
+            color="blue"
+            showValue
+          />
+          <StatBar
+            label="耐力"
+            value={character.vitals.stamina}
+            max={character.vitals.maxStamina}
+            color="emerald"
+            showValue
+          />
+        </div>
+      </Panel>
+
       {/* Combat Power */}
       <Panel title="战斗评估">
          <div className="grid grid-cols-2 gap-4">
