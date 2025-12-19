@@ -27,7 +27,11 @@
 </template>
 
 <script setup lang="ts">
+<<<<<<< HEAD
 import { useDataStore } from '../store';
+=======
+import { useDataStore } from '../../store';
+>>>>>>> 6939e54f496efe6c9e3921f663a5fa29e6ff3ddc
 
 const store = useDataStore();
 
